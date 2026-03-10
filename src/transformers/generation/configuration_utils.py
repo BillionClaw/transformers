@@ -1562,6 +1562,7 @@ class ContinuousBatchingConfig:
         max_cached_graphs: Maximum number of cached CUDA graphs. Default is 0 (uses a preset in continuous_api.py)
         varlen_compile_config: CompileConfig for varlen (prefill) path. Default is None (uses generation_config fallback)
         decode_compile_config: CompileConfig for decode (fast) path. Default is None (uses generation_config fallback)
+        use_default_compile_configs: Enable default compile configs for paths not explicitly set. Default is False
         scheduler: Scheduler type to use. Default is "fifo".
         max_queue_size: Maximum request queue size for serving. Default is 0 (unlimited).
     """
@@ -1748,12 +1749,9 @@ class ContinuousBatchingConfig:
             decode_config = self.decode_compile_config
 
         # For decode, we throw a warning if the fast decode path is not available and a compile config was found
-        if not decode_fast_path_available:
+        if not decode_fast_path_available and decode_config is not None:
             decode_config = None
-            if self.decode_compile_config is not None:
-                logger_.warning(
-                    "decode_compile_config provided but fast decode path is not available (max_blocks_per_request=0)"
-                )
+            logger_.warning("A decode_compile_config was found but fast decode path is not available. Ignoring it.")
 
         # Log what will be compiled
         if varlen_config is not None:
