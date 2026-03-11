@@ -30,7 +30,7 @@ from ..depth_anything.modeling_depth_anything import (
 
 
 class PromptDepthAnythingConfig(DepthAnythingConfig):
-    model_type = "prompt_depth_anything"
+    pass
 
 
 class PromptDepthAnythingLayer(nn.Module):
@@ -288,7 +288,7 @@ class PromptDepthAnythingForDepthEstimation(DepthAnythingForDepthEstimation):
         if labels is not None:
             raise NotImplementedError("Training is not implemented yet")
 
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )

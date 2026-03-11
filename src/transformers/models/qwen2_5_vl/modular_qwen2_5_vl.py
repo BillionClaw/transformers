@@ -19,11 +19,13 @@
 """PyTorch Qwen2.5-VL model."""
 
 import itertools
+from dataclasses import dataclass
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from huggingface_hub.dataclasses import strict
 
 from ... import initialization as init
 from ...activations import ACT2FN
@@ -61,6 +63,8 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="Qwen2-VL-7B-Instruct")
+@strict(accept_kwargs=True)
+@dataclass
 class Qwen2_5_VLVisionConfig(PreTrainedConfig):
     r"""
     tokens_per_second (`int`, *optional*, defaults to 41):
@@ -76,49 +80,28 @@ class Qwen2_5_VLVisionConfig(PreTrainedConfig):
     model_type = "qwen2_5_vl"
     base_config_key = "vision_config"
 
-    def __init__(
-        self,
-        depth=32,
-        hidden_size=3584,
-        hidden_act="silu",
-        intermediate_size=3420,
-        num_heads=16,
-        in_channels=3,
-        patch_size=14,
-        spatial_merge_size=2,
-        temporal_patch_size=2,
-        tokens_per_second=4,
-        window_size=112,
-        out_hidden_size=3584,
-        fullatt_block_indexes=[7, 15, 23, 31],
-        initializer_range=0.02,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-
-        self.depth = depth
-        self.hidden_size = hidden_size
-        self.hidden_act = hidden_act
-        self.intermediate_size = intermediate_size
-        self.num_heads = num_heads
-        self.in_channels = in_channels
-        self.patch_size = patch_size
-        self.spatial_merge_size = spatial_merge_size
-        self.temporal_patch_size = temporal_patch_size
-        self.tokens_per_second = tokens_per_second
-        self.window_size = window_size
-        self.fullatt_block_indexes = fullatt_block_indexes
-        self.out_hidden_size = out_hidden_size
-        self.initializer_range = initializer_range
+    depth: int = 32
+    hidden_size: int = 3584
+    hidden_act: str = "silu"
+    intermediate_size: int = 3420
+    num_heads: int = 16
+    in_channels: int = 3
+    patch_size: int | list[int] | tuple[int, int] = 14
+    spatial_merge_size: int = 2
+    temporal_patch_size: int | list[int] | tuple[int, int] = 2
+    tokens_per_second: int = 4
+    window_size: int = 112
+    out_hidden_size: int = 3584
+    fullatt_block_indexes: list[int] | tuple[int, ...] = (7, 15, 23, 31)
+    initializer_range: float = 0.02
 
 
 class Qwen2_5_VLTextConfig(Qwen2VLTextConfig):
-    model_type = "qwen2_5_vl_text"
+    pass
 
 
 class Qwen2_5_VLConfig(Qwen2VLConfig):
-    model_type = "qwen2_5_vl"
-    sub_configs = {"vision_config": Qwen2_5_VLVisionConfig, "text_config": Qwen2_5_VLTextConfig}
+    pass
 
 
 class Qwen2_5_VLRMSNorm(LlamaRMSNorm):
@@ -577,7 +560,7 @@ class Qwen2_5_VLModel(Qwen2VLModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if inputs_embeds is None:
             inputs_embeds = self.get_input_embeddings()(input_ids)

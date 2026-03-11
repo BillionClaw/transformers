@@ -1012,7 +1012,7 @@ class Zamba2Model(ZambaModel, Zamba2PreTrainedModel):
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
 
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError(

@@ -274,7 +274,7 @@ class ClapAudioPatchEmbed(nn.Module):
 
         padding = ((patch_size[0] - patch_stride[0]) // 2, (patch_size[1] - patch_stride[1]) // 2)
 
-        scale_factor = 4 if (self.enable_fusion) and (config.fusion_type == "channel_map") else 1
+        scale_factor = 4 if self.enable_fusion and config.fusion_type == "channel_map" else 1
 
         self.proj = nn.Conv2d(
             config.patch_embed_input_channels * scale_factor,
@@ -1389,7 +1389,7 @@ class ClapAudioModel(ClapPreTrainedModel):
         >>> outputs = model(**inputs)
         >>> last_hidden_state = outputs.last_hidden_state
         ```"""
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -1462,7 +1462,7 @@ class ClapTextModel(ClapPreTrainedModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
@@ -1670,7 +1670,7 @@ class ClapModel(ClapPreTrainedModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         audio_outputs = self.audio_model(
             input_features=input_features,
@@ -1766,7 +1766,7 @@ class ClapTextModelWithProjection(ClapPreTrainedModel):
         >>> outputs = model(**inputs)
         >>> text_embeds = outputs.text_embeds
         ```"""
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         text_outputs = self.text_model(
             input_ids=input_ids,
@@ -1837,7 +1837,7 @@ class ClapAudioModelWithProjection(ClapPreTrainedModel):
         >>> outputs = model(**inputs)
         >>> audio_embeds = outputs.audio_embeds
         ```"""
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states

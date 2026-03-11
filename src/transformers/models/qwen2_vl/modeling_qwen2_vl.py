@@ -287,8 +287,8 @@ class VisionRotaryEmbedding(nn.Module):
 class PatchEmbed(nn.Module):
     def __init__(
         self,
-        patch_size: int = 14,
-        temporal_patch_size: int = 2,
+        patch_size: int | list[int] | tuple[int, int] = 14,
+        temporal_patch_size: int | list[int] | tuple[int, int] = 2,
         in_channels: int = 3,
         embed_dim: int = 1152,
     ) -> None:
@@ -856,7 +856,7 @@ class Qwen2VLTextModel(Qwen2VLPreTrainedModel):
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
 
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
@@ -1313,7 +1313,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if inputs_embeds is None:
             inputs_embeds = self.get_input_embeddings()(input_ids)

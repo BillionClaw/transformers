@@ -516,7 +516,7 @@ class CLIPSegEncoder(nn.Module):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         encoder_states = () if output_hidden_states else None
         all_attentions = () if output_attentions else None
@@ -574,7 +574,7 @@ class CLIPSegTextTransformer(CLIPSegPreTrainedModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if input_ids is None:
             raise ValueError("You have to specify input_ids")
@@ -718,7 +718,7 @@ class CLIPSegVisionTransformer(nn.Module):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         hidden_states = self.embeddings(pixel_values, interpolate_pos_encoding=interpolate_pos_encoding)
         hidden_states = self.pre_layrnorm(hidden_states)
@@ -958,7 +958,7 @@ class CLIPSegModel(CLIPSegPreTrainedModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         vision_outputs = self.vision_model(
             pixel_values=pixel_values,
@@ -1271,7 +1271,7 @@ class CLIPSegForImageSegmentation(CLIPSegPreTrainedModel):
         >>> print(logits.shape)
         torch.Size([3, 352, 352])
         ```"""
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         # step 1: forward the query images through the frozen CLIP vision encoder
         with torch.no_grad():

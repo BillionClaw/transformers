@@ -13,8 +13,11 @@
 # limitations under the License.
 
 import math
+from dataclasses import dataclass
+from typing import Literal
 
 import torch
+from huggingface_hub.dataclasses import strict
 from torch import nn
 
 from transformers.models.llava_next.modeling_llava_next import (
@@ -42,6 +45,8 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="llava-hf/LLaVA-NeXT-Video-7B-hf")
+@strict(accept_kwargs=True)
+@dataclass
 class LlavaNextVideoConfig(PreTrainedConfig):
     r"""
     image_grid_pinpoints (`List`, *optional*, defaults to `[[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]`):
@@ -78,54 +83,27 @@ class LlavaNextVideoConfig(PreTrainedConfig):
     }
     sub_configs = {"text_config": AutoConfig, "vision_config": AutoConfig}
 
-    def __init__(
-        self,
-        vision_config=None,
-        text_config=None,
-        image_token_index=32001,
-        projector_hidden_act="gelu",
-        multimodal_projector_bias=True,
-        vision_feature_select_strategy="default",
-        vision_feature_layer=-2,
-        image_grid_pinpoints=None,
-        video_token_index=32000,
-        spatial_pool_mode="average",
-        spatial_pool_stride=2,
-        image_seq_length=576,
-        video_seq_length=288,
-        tie_word_embeddings=False,
-        **kwargs,
-    ):
-        self.video_token_index = video_token_index
-        self.spatial_pool_mode = spatial_pool_mode
-        self.spatial_pool_stride = spatial_pool_stride
-        self.image_seq_length = image_seq_length
-        self.video_seq_length = video_seq_length
-        self.image_token_index = image_token_index
-        self.projector_hidden_act = projector_hidden_act
-        self.multimodal_projector_bias = multimodal_projector_bias
-        self.tie_word_embeddings = tie_word_embeddings
+    vision_config: dict | PreTrainedConfig | None = None
+    text_config: dict | PreTrainedConfig | None = None
+    image_token_index: int = 32001
+    video_token_index: int = 32000
+    projector_hidden_act: str = "gelu"
+    vision_feature_select_strategy: Literal["default", "full"] = "default"
+    vision_feature_layer: int | list[int] = -2
+    multimodal_projector_bias: bool = True
+    tie_word_embeddings: bool = False
+    image_grid_pinpoints: list | None = None
+    spatial_pool_mode: str = "average"
+    spatial_pool_stride: int = 2
+    image_seq_length: int = 576
+    video_seq_length: int = 288
 
-        if vision_feature_select_strategy not in ["default", "full"]:
-            raise ValueError(
-                "vision_feature_select_strategy should be one of 'default', 'full'."
-                f"Got: {vision_feature_select_strategy}"
-            )
-
-        self.vision_feature_select_strategy = vision_feature_select_strategy
-        self.vision_feature_layer = vision_feature_layer
-        image_grid_pinpoints = (
-            image_grid_pinpoints
-            if image_grid_pinpoints is not None
-            else [[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]
-        )
-        self.image_grid_pinpoints = image_grid_pinpoints
-
-        if isinstance(vision_config, dict):
-            vision_config["model_type"] = vision_config.get("model_type", "clip_vision_model")
-            vision_config = CONFIG_MAPPING[vision_config["model_type"]](**vision_config)
-        elif vision_config is None:
-            vision_config = CONFIG_MAPPING["clip_vision_model"](
+    def __post_init__(self, **kwargs):
+        if isinstance(self.vision_config, dict):
+            self.vision_config["model_type"] = self.vision_config.get("model_type", "clip_vision_model")
+            self.vision_config = CONFIG_MAPPING[self.vision_config["model_type"]](**self.vision_config)
+        elif self.vision_config is None:
+            self.vision_config = CONFIG_MAPPING["clip_vision_model"](
                 intermediate_size=4096,
                 hidden_size=1024,
                 patch_size=14,
@@ -136,23 +114,25 @@ class LlavaNextVideoConfig(PreTrainedConfig):
                 projection_dim=768,
             )
 
-        self.vision_config = vision_config
+        if isinstance(self.text_config, dict):
+            self.text_config["model_type"] = self.text_config.get("model_type", "llama")
+            self.text_config = CONFIG_MAPPING[self.text_config["model_type"]](**self.text_config)
+        elif self.text_config is None:
+            self.text_config = CONFIG_MAPPING["llama"]()
 
-        if isinstance(text_config, dict):
-            text_config["model_type"] = text_config.get("model_type", "llama")
-            text_config = CONFIG_MAPPING[text_config["model_type"]](**text_config)
-        elif text_config is None:
-            text_config = CONFIG_MAPPING["llama"]()
-
-        self.text_config = text_config
+        self.image_grid_pinpoints = (
+            self.image_grid_pinpoints
+            if self.image_grid_pinpoints is not None
+            else [[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]
+        )
 
         # The default value is `False` but this config is used with many model types
         # Attr `tie_word_embeddings` was saved in text config for those models, so we
         # need an ugly workaround and forward-pass the attr from text config
-        if not tie_word_embeddings and self.text_config.tie_word_embeddings:
+        if not self.tie_word_embeddings and self.text_config.tie_word_embeddings:
             self.tie_word_embeddings = self.text_config.tie_word_embeddings
 
-        super().__init__(**kwargs)
+        super().__post_init__(**kwargs)
 
 
 class LlavaNextVideoModelOutputWithPast(LlavaNextModelOutputWithPast):
@@ -252,7 +232,7 @@ class LlavaNextVideoModel(LlavaNextModel):
         self,
         pixel_values: torch.FloatTensor,
         image_sizes: torch.Tensor,
-        vision_feature_layer: int | list[int] | None = None,
+        vision_feature_layer: int | list[int] | list[int] | None = None,
         vision_feature_select_strategy: str | None = None,
         output_hidden_states: bool | None = None,
         **kwargs: Unpack[TransformersKwargs],
@@ -324,7 +304,7 @@ class LlavaNextVideoModel(LlavaNextModel):
     def get_video_features(
         self,
         pixel_values: torch.FloatTensor,
-        vision_feature_layer: int | list[int] | None = None,
+        vision_feature_layer: int | list[int] | list[int] | None = None,
         vision_feature_select_strategy: str | None = None,
         output_hidden_states: bool | None = None,
         **kwargs: Unpack[TransformersKwargs],
@@ -421,7 +401,7 @@ class LlavaNextVideoModel(LlavaNextModel):
         position_ids: torch.LongTensor | None = None,
         past_key_values: Cache | None = None,
         inputs_embeds: torch.FloatTensor | None = None,
-        vision_feature_layer: int | list[int] | None = None,
+        vision_feature_layer: int | list[int] | list[int] | None = None,
         vision_feature_select_strategy: str | None = None,
         use_cache: bool | None = None,
         output_attentions: bool | None = None,
@@ -434,7 +414,7 @@ class LlavaNextVideoModel(LlavaNextModel):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
@@ -502,7 +482,7 @@ class LlavaNextVideoForConditionalGeneration(LlavaNextForConditionalGeneration):
     def get_video_features(
         self,
         pixel_values: torch.FloatTensor,
-        vision_feature_layer: int | list[int] | None = None,
+        vision_feature_layer: int | list[int] | list[int] | None = None,
         vision_feature_select_strategy: str | None = None,
         **kwargs: Unpack[TransformersKwargs],
     ) -> tuple | BaseModelOutputWithPooling:
@@ -536,7 +516,7 @@ class LlavaNextVideoForConditionalGeneration(LlavaNextForConditionalGeneration):
         position_ids: torch.LongTensor | None = None,
         past_key_values: Cache | None = None,
         inputs_embeds: torch.FloatTensor | None = None,
-        vision_feature_layer: int | list[int] | None = None,
+        vision_feature_layer: int | list[int] | list[int] | None = None,
         vision_feature_select_strategy: str | None = None,
         labels: torch.LongTensor | None = None,
         use_cache: bool | None = None,
@@ -616,7 +596,7 @@ class LlavaNextVideoForConditionalGeneration(LlavaNextForConditionalGeneration):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         outputs = self.model(
             input_ids=input_ids,

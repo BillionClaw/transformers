@@ -13,7 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
+
 import torch
+from huggingface_hub.dataclasses import strict
 from torch import nn
 
 from ...cache_utils import Cache, DynamicCache
@@ -38,6 +41,8 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolVLM2-2.2B-Instruct")
+@strict(accept_kwargs=True)
+@dataclass
 class SmolVLMVisionConfig(Idefics3VisionConfig):
     r"""
     Example:
@@ -68,6 +73,8 @@ class SmolVLMVisionTransformer(Idefics3VisionTransformer):
 
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolVLM2-2.2B-Instruct")
+@strict(accept_kwargs=True)
+@dataclass
 class SmolVLMConfig(Idefics3Config):
     r"""
     scale_factor (`int`, *optional*, defaults to 2):
@@ -228,7 +235,7 @@ class SmolVLMModel(Idefics3Model):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         if self.training and self.text_model.gradient_checkpointing and use_cache:
             logger.warning_once(
